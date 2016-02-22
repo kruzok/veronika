@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+    <title>Moje prasiatko</title>
+		<script type="text/javascript" src="js/phaser.min.js"></script>
+		<script type="text/javascript" src="js/spliter.js"></script>
+    <style type="text/css" style="css/style.css"> </style>
+</head>
+<body>
+
+<script type="text/javascript">
+//vytvorime si hru
+var game = new Phaser.Game(400, 220, Phaser.CANVAS, 'phaser-example');
+//tu bude ulozena postavicka prasiatka
+var pig;
+//pociatocne nastavenia
+var pociatocneZdravie = 20;
+var pociatocneJedlo = 20;
+var pociatocneSkore = 0;
+
+var zdravie = pociatocneZdravie;
+var jedlo = pociatocneJedlo;
+var skore = pociatocneSkore;
+
+var zdravieText;
+var skoreText;
+var jedloText;
+
+// definujeme si z coho sa bude nasa hra skladat
+var play = function(game){};
+play.prototype =
+	{ preload: preload, create: create, update: update}
+
+function preload() {
+	game.load.atlas('pig', 'assets/pig.png', null, botData());
+	game.load.image("background", "assets/bg1600x883.jpg");
+	game.load.image("heart", "assets/heart.png");
+	game.load.image("apple", "assets/apple.png");
+	game.load.image("cake", "assets/cake.png");
+	game.load.image("sleep", "assets/sleep.png");
+	game.load.image("spoon", "assets/spoon.png");
+	game.load.image("wc", "assets/wc.png");
+	game.load.image("score", "assets/score.png");
+	// game.load.image("balon", "assets/balon.png");
+}
+
+function create() {
+	// pozadie
+	var bg = game.add.tileSprite(0, 0, 1600, 883, 'background');
+	//zmensi pozadie lebo prasiatko je male
+	bg.scale.setTo(0.25, 0.25);
+	// srdce -  zivot
+	game.add.tileSprite(0, 0, 32, 32, 'heart');
+	//   jedlo
+	game.add.tileSprite(0, 32, 24, 24, 'spoon');
+	//   skore
+	game.add.tileSprite(0, 64, 24, 24, 'score');
+
+	// jablko - nakrm
+	var apple = game.add.tileSprite(360, 10, 24, 24, 'apple');
+	// nastavime co ma hra robit po kliknuti na jablko
+	apple.inputEnabled = true;
+	apple.events.onInputDown.add(klikNaJablko, this);
+
+	// kolac - nakrm
+	var cake = game.add.tileSprite(360, 42, 32, 32, 'cake');
+	// nastavime co ma hra robit po kliknuti na kolac
+	cake.inputEnabled = true;
+	cake.events.onInputDown.add(klikNaKolac, this);
+
+	// wc
+	var wc = game.add.tileSprite(360, 78, 24, 24, 'wc');
+	// nastavime co ma hra robit po kliknuti na wc
+	wc.inputEnabled = true;
+	wc.events.onInputDown.add(klikNaWc, this);
+
+	// wc
+	var sleep = game.add.tileSprite(360, 110, 26, 33, 'sleep');
+	// nastavime co ma hra robit po kliknuti na vankus
+	sleep.inputEnabled = true;
+	sleep.events.onInputDown.add(klikNaVankus, this);
+	// stav zdravia
+	zdravieText = game.add.text(32, 10, zdravie, { fontSize: '12px', fill: '#fff' });
+	// stav jedla
+	jedloText = game.add.text(32, 42, jedlo, { fontSize: '12px', fill: '#fff' });
+	// ake mas skore
+	skoreText = game.add.text(32, 74, skore, { fontSize: '12px', fill: '#fff' });
+	// vytvor prasiatko
+	pig = game.add.sprite(40, 130, 'pig');
+	pig.inputEnabled = true;
+	pig.events.onInputDown.add(klikNaPrasiatko, this);
+
+
+	// nahraj animacie prasiatka
+	initPigAnimations(pig)
+
+//co prasiatko moze robit
+	// pig.animations.play('stand1', 5, true);
+	// pig.animations.play('stand2', 5, true);
+	// pig.animations.play('rest', 5, true);
+	// pig.animations.play('move', 5, true);
+	// pig.animations.play('jump', 5, true);
+	// pig.animations.play('hang', 5, true);
+	// pig.animations.play('swim', 5, true);
+	// pig.animations.play('chat', 5, true);
+	// pig.animations.play('eat', 5, true);
+	// pig.animations.play('hungry', 5, true);
+	// pig.animations.play('happy', 5, true);
+	// pig.animations.play('cry', 5, true);
+	// pig.animations.play('angry', 5, true);
+	// pig.animations.play('deride', 5, true);
+	// pig.animations.play('sleep', 5, true);
+	// pig.animations.play('stunned', 5, true);
+	// pig.animations.play('dung', 5, true);
+
+
+	//zniz najedenie kazdu sekundu
+	var jedloSpotreba = this.game.time.events.loop(Phaser.Timer.SECOND * 1, znizJedlo, this);
+	jedloSpotreba.timer.start();
+	//zniz zdravie kazdu sekundu
+	var zdravieSpotreba = this.game.time.events.loop(Phaser.Timer.SECOND * 1.5, znizZdravie, this);
+	zdravieSpotreba.timer.start();
+}
+
+function znizJedlo() {
+	jedlo--;
+}
+function znizZdravie() {
+	zdravie--;
+}
+
+
+function klikNaPrasiatko() {
+	 pig.animations.play('happy', 5, false);
+}
+
+function klikNaVankus() {
+	 pig.animations.play('sleep', 5, false);
+}
+
+function klikNaJablko() {
+	 jedlo = jedlo + 10;
+	 jedlo = Math.min(jedlo, pociatocneJedlo);
+	 pig.animations.play('eat', 5, false);
+	 skore++;
+}
+
+function klikNaKolac() {
+	 jedlo = jedlo + 10;
+	 zdravie = zdravie - 5;
+	 jedlo = Math.min(jedlo, pociatocneJedlo);
+	 pig.animations.play('eat', 5, false);
+	 skore++;
+}
+
+function klikNaSpanok() {
+	 zdravie = zdravie + 10;
+	 zdravie = Math.min(zdravie, pociatocneZdravie);
+	 pig.animations.play('sleep', 5, false);
+	 skore++;
+}
+
+function klikNaWc() {
+	 zdravie = zdravie + 10;
+	 zdravie = Math.min(zdravie, pociatocneZdravie);
+	 pig.animations.play('dung', 5, false);
+	 skore++;
+}
+
+function update() {
+	// ak ziadna ina animacia nie je tak nechaj prasiatko stat a zmurkat
+	if (!pig.animations.currentAnim.isPlaying) {
+			pig.animations.play('stand2', 5, true);
+	}
+	// nastav co sa ma zobrazit - jedlo, zdravie, skore
+	zdravieText.text = zdravie;
+	jedloText.text = jedlo;
+	skoreText.text = skore;
+	//ak je zdravie mensie ako 5
+	if(zdravie < 10 && zdravie > 5){
+		pig.animations.play('angry', 5, false);
+	}
+	if(zdravie <= 5){
+		pig.animations.play('stunned', 5, false);
+	}
+	if (zdravie <= 0 || jedlo <= 0){
+		game.state.start('gameOver');
+	}
+
+}
+
+
+// ak prehras spusti sa tato cast hry
+var gameOver = function(game) {};
+gameOver.prototype = {
+	//vytvori sa prostredie
+	create: function() {
+		//
+		this.spacebar = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+		var bg = game.add.tileSprite(0, 0, 1600, 883, 'background');
+		bg.scale.setTo(0.25, 0.25);
+		pig = game.add.sprite(40, 130, 'pig');
+		initPigAnimations(pig)
+		//spustim plac prasiatka
+		pig.animations.play('cry', 5, true);
+		//vypiseme konecne skore
+		label = game.add.text(400 / 2 , 120 / 2, 'Skóre: '+skore+'\nPREHRAL SI\nStlač MEDZERNÍK pre novú hru',{ font: '22px Lucida Console', stroke: '#fff', strokeThickness: 2, fill: '#111', align: 'center'});
+		label.anchor.setTo(0.5, 0.5);
+	},
+	update: function() {
+		//ak je stlaceny medzernik spust hru odznovu
+		if (this.spacebar.isDown) {
+			//pri novom starte nastavim pociatocne hodnoty hry
+			zdravie = pociatocneZdravie;
+			skore = pociatocneSkore;
+			//opatovne spustenie hry
+			game.state.start('play');
+		}
+	}
+};
+
+
+game.state.add("play", play);
+game.state.add("gameOver", gameOver);
+game.state.start('play');
+</script>
+
+</body>
+</html>
